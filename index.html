@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Load data from an external GeoJSON file</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.12.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.12.0/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<script>
+	// TO MAKE THE MAP APPEAR YOU MUST
+	// ADD YOUR ACCESS TOKEN FROM
+	// https://account.mapbox.com
+	mapboxgl.accessToken = 'pk.eyJ1IjoibnlhbWF0byIsImEiOiJja2Y4dzNkOW8wY3MwMnFvM29iNnJzNzVzIn0.GHlHwu3r5YjKBU3qAKvccQ';
+    const map = new mapboxgl.Map({
+        container: 'map', // container ID
+        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        style: 'mapbox://styles/mapbox/satellite-v9', // style URL
+        projection: 'globe', // Display the map as a globe, since satellite-v9 defaults to Mercator
+        zoom: 12, // starting zoom
+        center: [-0.11602507197780791, 51.52001386059443] // // starting center in [lng, lat]
+    });
+
+    map.on('style.load', () => {
+        map.setFog({}); // Set the default atmosphere style
+    });
+
+    map.on('load', () => {
+        map.addSource('parks', {
+            type: 'geojson',
+            // Use a URL for the value for the `data` property.
+            data: './geojson/ParksLondon.geojson'
+        });
+
+        map.addLayer({
+            'id': 'parks-layer',
+            'type': 'circle',
+            'source': 'parks',
+            'paint': {
+                'circle-radius': 4,
+                'circle-stroke-width': 2,
+                'circle-color': 'red',
+                'circle-stroke-color': 'white'
+            }
+        });
+
+        // Create a popup, but don't add it to the map yet.
+        const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+        });
+        
+        map.on('mouseenter', 'parks-layer', (e) => {
+            console.log()
+
+        // Change the cursor style as a UI indicator.
+        map.getCanvas().style.cursor = 'pointer';
+        
+        // Copy coordinates array.
+        const coordinates = e.features[0].geometry.coordinates.slice();
+        const description = e.features[0].properties.Name;
+        
+        // Ensure that if the map is zoomed out such that multiple
+        // copies of the feature are visible, the popup appears
+        // over the copy being pointed to.
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+        }
+        
+        // Populate the popup and set its coordinates
+        // based on the feature found.
+        popup.setLngLat(coordinates).setHTML(description).addTo(map);
+        });
+        
+        map.on('mouseleave', 'places', () => {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+        });
+    });
+</script>
+
+</body>
+</html>
